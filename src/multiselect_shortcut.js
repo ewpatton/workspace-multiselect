@@ -24,6 +24,9 @@ const registerShortcutDelete = function() {
         return false;
       }
       const selected = Blockly.common.getSelected();
+      if (selected && selected.isInMutator) {
+        return selected.isDeletable();  // Blocks in the mutator workspace are always deletable.
+      }
       const blockSelection = blockSelectionWeakMap.get(workspace);
       if (!blockSelection.size) {
         return deleteShortcut.check(selected);
@@ -60,6 +63,10 @@ const registerShortcutDelete = function() {
       };
       const selected = Blockly.common.getSelected();
       Blockly.Events.setGroup(true);
+      if (selected && selected.isInMutator) {
+        selected.checkAndDelete();
+        return true;
+      }
       const blockSelection = blockSelectionWeakMap.get(workspace);
       if (!blockSelection.size) {
         apply(selected);
