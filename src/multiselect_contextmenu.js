@@ -551,21 +551,18 @@ const registerDelete = function() {
         if (!block) return;
 
         const countBlockAndDescendants = function(currentBlock) {
-          let count = 1; // initial block
-
+          let count = 1; // Initial block
           for (const input of currentBlock.inputList) {
             if (input.connection && input.connection.targetBlock()) {
               const connectedBlock = input.connection.targetBlock();
+              count += countBlockAndDescendants(connectedBlock);
+              // For statement inputs, also follow the next chain
               if (input.type === Blockly.inputTypes.STATEMENT) {
-                // For statement inputs, count the entire chain of next blocks
-                let nextInChain = connectedBlock;
-                while (nextInChain) {
-                  count += countBlockAndDescendants(nextInChain);
-                  nextInChain = nextInChain.getNextBlock();
+                let nextInStatement = connectedBlock.getNextBlock();
+                while (nextInStatement) {
+                  count += countBlockAndDescendants(nextInStatement);
+                  nextInStatement = nextInStatement.getNextBlock();
                 }
-              } else {
-                // For value inputs, just count the connected block tree
-                count += countBlockAndDescendants(connectedBlock);
               }
             }
           }
@@ -576,7 +573,21 @@ const registerDelete = function() {
         descendantCount += countBlockAndDescendants(block);
       };
 
-      countDescendants(scope.block);
+      const workspace = scope.block.workspace;
+      const blockSelection = blockSelectionWeakMap.get(workspace);
+      const isInMultiselection = blockSelection &&
+        blockSelection.has(scope.block.id);
+
+      if (!isInMultiselection) {
+        countDescendants(scope.block);
+      } else {
+        blockSelection.forEach(function(id) {
+          const block = workspace.getBlockById(id);
+          if (block && !hasSelectedParent(block)) {
+            countDescendants(block);
+          }
+        });
+      }
 
       return (descendantCount <= 1) ?
         Blockly.Msg['DELETE_BLOCK'] :
