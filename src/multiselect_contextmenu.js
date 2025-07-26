@@ -548,13 +548,32 @@ const registerDelete = function() {
     displayText: function(scope) {
       let descendantCount = 0;
       const countDescendants = function(block) {
-        if (block) {
-          descendantCount += block.getDescendants(false).length;
-          const nextBlock = block.getNextBlock();
-          if (nextBlock) {
-            descendantCount -= nextBlock.getDescendants(false).length;
+        if (!block) return;
+
+        const countBlockAndDescendants = function(currentBlock) {
+          let count = 1; // initial block
+
+          for (const input of currentBlock.inputList) {
+            if (input.connection && input.connection.targetBlock()) {
+              const connectedBlock = input.connection.targetBlock();
+              if (input.type === Blockly.inputTypes.STATEMENT) {
+                // For statement inputs, count the entire chain of next blocks
+                let nextInChain = connectedBlock;
+                while (nextInChain) {
+                  count += countBlockAndDescendants(nextInChain);
+                  nextInChain = nextInChain.getNextBlock();
+                }
+              } else {
+                // For value inputs, just count the connected block tree
+                count += countBlockAndDescendants(connectedBlock);
+              }
+            }
           }
-        }
+
+          return count;
+        };
+
+        descendantCount += countBlockAndDescendants(block);
       };
 
       countDescendants(scope.block);
