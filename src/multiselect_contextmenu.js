@@ -576,9 +576,9 @@ const registerDelete = function() {
       const workspace = scope.block.workspace;
       const blockSelection = blockSelectionWeakMap.get(workspace);
       const isInMultiselection = blockSelection &&
-        blockSelection.has(scope.block.id);
+          blockSelection.has(scope.block.id);
 
-      if (!isInMultiselection) {
+      if (!blockSelection || blockSelection.size === 0 || !isInMultiselection) {
         countDescendants(scope.block);
       } else {
         blockSelection.forEach(function(id) {
